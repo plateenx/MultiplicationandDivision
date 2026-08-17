@@ -1,12 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { ScoreRecord, User, UserLog, SessionSummary, GameRecord, GameSummaryStats } from '../types';
-
-export interface SupabaseSettings {
-  supabaseUrl: string;
-  supabaseAnonKey: string;
-  soundEnabled: boolean;
-  theme: 'light' | 'dark';
-}
+import { ScoreRecord, User, UserLog, SessionSummary, GameRecord, GameSummaryStats, SupabaseSettings } from '../types';
 
 const STORAGE_KEYS = {
   USERS: 'math_app_users',
@@ -1442,8 +1435,6 @@ class SupabaseService {
 }
 
 export const supabaseService = new SupabaseService();
-// Alias for backward compatibility
-export const sheetsService = supabaseService;
 
 export const SUPABASE_SQL_INIT_SCRIPT = `-- =========================================================================
 -- สคริปต์สร้างและอัปเดตตารางฐานข้อมูลสำหรับ Supabase (PostgreSQL)

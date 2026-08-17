@@ -106,9 +106,9 @@ export interface Question {
   hint?: string;
 }
 
-export interface AppSettings {
-  scriptUrl: string;
-  spreadsheetId: string;
+export interface SupabaseSettings {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
   soundEnabled: boolean;
   theme: 'light' | 'dark';
 }

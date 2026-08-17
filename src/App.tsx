@@ -14,7 +14,7 @@ import { InteractiveLearning } from './components/InteractiveLearning';
 import { ExerciseQuiz } from './components/ExerciseQuiz';
 import { GameHub } from './components/games/GameHub';
 import { LeaderboardAndLogs } from './components/LeaderboardAndLogs';
-import { GasScriptModal } from './components/GasScriptModal';
+import { SupabaseSettingsModal } from './components/SupabaseSettingsModal';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -38,7 +38,7 @@ export default function App() {
     return 'dark';
   });
   const [soundMuted, setSoundMuted] = useState<boolean>(false);
-  const [isGasModalOpen, setIsGasModalOpen] = useState<boolean>(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState<boolean>(false);
 
   // Sync theme class on HTML & body element
   useEffect(() => {
@@ -100,7 +100,7 @@ export default function App() {
           onLoginSuccess={handleLoginSuccess}
           theme={theme}
           onToggleTheme={handleToggleTheme}
-          onOpenGasModal={() => setIsGasModalOpen(true)}
+          onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         />
       ) : (
         <>
@@ -114,7 +114,7 @@ export default function App() {
             onToggleTheme={handleToggleTheme}
             soundMuted={soundMuted}
             onToggleSound={handleToggleSound}
-            onOpenGasModal={() => setIsGasModalOpen(true)}
+            onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
           />
 
           {/* Main App Workspace */}
@@ -133,10 +133,10 @@ export default function App() {
         </>
       )}
 
-      {/* GAS Script Modal */}
-      <GasScriptModal
-        isOpen={isGasModalOpen}
-        onClose={() => setIsGasModalOpen(false)}
+      {/* Supabase Settings Modal */}
+      <SupabaseSettingsModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
       />
 
       {/* Footer */}

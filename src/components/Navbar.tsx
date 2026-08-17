@@ -24,7 +24,7 @@ interface NavbarProps {
   onToggleTheme: () => void;
   soundMuted: boolean;
   onToggleSound: () => void;
-  onOpenGasModal: () => void;
+  onOpenSupabaseModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -36,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTheme,
   soundMuted,
   onToggleSound,
-  onOpenGasModal,
+  onOpenSupabaseModal,
 }) => {
   const navItems = [
     { id: 'summary', label: 'สรุปความรู้', icon: BookOpen },
@@ -91,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Supabase Database Guide Button */}
             <button
-              onClick={onOpenGasModal}
+              onClick={onOpenSupabaseModal}
               title="ตั้งค่าฐานข้อมูล Supabase"
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-semibold transition"
             >

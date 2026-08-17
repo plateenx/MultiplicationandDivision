@@ -21,14 +21,14 @@ interface AuthSlidingPanelProps {
   onLoginSuccess: (user: User) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
-  onOpenGasModal: () => void;
+  onOpenSupabaseModal: () => void;
 }
 
 export const AuthSlidingPanel: React.FC<AuthSlidingPanelProps> = ({
   onLoginSuccess,
   theme,
   onToggleTheme,
-  onOpenGasModal,
+  onOpenSupabaseModal,
 }) => {
   const [isSignUp, setIsSignUp] = useState(false);
 
@@ -192,7 +192,7 @@ export const AuthSlidingPanel: React.FC<AuthSlidingPanelProps> = ({
       {/* Top Bar Floating Controls */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-30">
         <button
-          onClick={onOpenGasModal}
+          onClick={onOpenSupabaseModal}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 text-emerald-300 text-xs font-semibold backdrop-blur-md transition"
         >
           <Database className="w-4 h-4 text-emerald-400" />
