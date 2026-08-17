@@ -1,0 +1,6 @@
+{
+  "name": "การคูณและการหารจำนวนเต็ม App",
+  "description": "แอปพลิเคชันสื่อการเรียนรู้ แบบฝึกหัด และ 10 เกมคณิตศาสตร์การคูณและการหารจำนวนเต็ม พร้อมระบบ Sliding Auth, Interactive Keyboard, Sound FX และเชื่อมต่อฐานข้อมูล Supabase",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
