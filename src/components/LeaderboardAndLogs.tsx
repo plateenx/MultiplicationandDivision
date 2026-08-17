@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { ScoreRecord, UserLog, SessionSummary, GameRecord } from '../types';
 import { supabaseService } from '../services/supabaseService';
-import { formatThaiDateTime } from '../utils/dateUtils';
+import { formatThaiDateTime, parseDateSafely } from '../utils/dateUtils';
 
 export const LeaderboardAndLogs: React.FC = () => {
   const [mainTab, setMainTab] = useState<'scores' | 'games' | 'sessions' | 'rawLogs'>('scores');
@@ -98,7 +98,7 @@ export const LeaderboardAndLogs: React.FC = () => {
       }
       return true;
     })
-    .sort((a, b) => b.percentage - a.percentage || new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    .sort((a, b) => b.percentage - a.percentage || parseDateSafely(b.timestamp).getTime() - parseDateSafely(a.timestamp).getTime());
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
@@ -225,7 +225,7 @@ export const LeaderboardAndLogs: React.FC = () => {
                   <th className="p-2.5 sm:p-3.5 text-center whitespace-nowrap">ระดับ</th>
                   <th className="p-2.5 sm:p-3.5 text-center whitespace-nowrap">คะแนน</th>
                   <th className="p-2.5 sm:p-3.5 text-center whitespace-nowrap">ร้อยละ (%)</th>
-                  <th className="p-2.5 sm:p-3.5 text-right whitespace-nowrap">วัน-เวลา</th>
+                  <th className="p-2.5 sm:p-3.5 text-right whitespace-nowrap">วัน-เวลา (เวลาไทย)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
@@ -384,7 +384,7 @@ export const LeaderboardAndLogs: React.FC = () => {
                   .sort(
                     (a, b) =>
                       b.score - a.score ||
-                      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                      parseDateSafely(b.timestamp).getTime() - parseDateSafely(a.timestamp).getTime()
                   ).length === 0 ? (
                   <tr>
                     <td colSpan={9} className="p-8 text-center text-slate-400">
@@ -408,7 +408,7 @@ export const LeaderboardAndLogs: React.FC = () => {
                     .sort(
                       (a, b) =>
                         b.score - a.score ||
-                        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                        parseDateSafely(b.timestamp).getTime() - parseDateSafely(a.timestamp).getTime()
                     )
                     .map((g, idx) => (
                       <tr

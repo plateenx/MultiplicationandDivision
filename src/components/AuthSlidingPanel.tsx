@@ -16,6 +16,7 @@ import {
 import { User } from '../types';
 import { supabaseService } from '../services/supabaseService';
 import { soundFx } from '../services/sound';
+import { getThailandIsoString } from '../utils/dateUtils';
 
 interface AuthSlidingPanelProps {
   onLoginSuccess: (user: User) => void;
@@ -141,7 +142,7 @@ export const AuthSlidingPanel: React.FC<AuthSlidingPanelProps> = ({
       room: Number(room),
       studentNo: Number(studentNo),
       email: email.trim(),
-      registeredAt: new Date().toISOString(),
+      registeredAt: getThailandIsoString(),
     };
 
     const result = await supabaseService.registerUser(newUser, password);
@@ -175,7 +176,7 @@ export const AuthSlidingPanel: React.FC<AuthSlidingPanelProps> = ({
       name: 'ผู้เยี่ยมชม',
       surname: '(Guest)',
       email: 'guest@mathapp.local',
-      registeredAt: new Date().toISOString(),
+      registeredAt: getThailandIsoString(),
     };
 
     supabaseService.saveLocalUser(guestUser);

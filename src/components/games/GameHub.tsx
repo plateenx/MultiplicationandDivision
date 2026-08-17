@@ -20,6 +20,7 @@ import {
 import { User, GameRecord } from '../../types';
 import { supabaseService } from '../../services/supabaseService';
 import { soundFx } from '../../services/sound';
+import { getThailandIsoString } from '../../utils/dateUtils';
 
 // 10 Game Components
 import { SpaceBlastGame } from './SpaceBlastGame';
@@ -228,7 +229,7 @@ export const GameHub: React.FC<GameHubProps> = ({ currentUser }) => {
         timeSpentSeconds: resultData?.timeSpentSeconds ?? 45,
         details: details || `บันทึกผลคะแนนเกม ${activeGameDef?.title || ''}`,
         specialMetrics: resultData?.specialMetrics || {},
-        timestamp: new Date().toISOString(),
+        timestamp: getThailandIsoString(),
       };
 
       // 1. Record detailed game metrics in game_records table

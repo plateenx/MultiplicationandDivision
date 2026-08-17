@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ScoreRecord, User, UserLog, SessionSummary, GameRecord, GameSummaryStats, SupabaseSettings } from '../types';
+import { getThailandIsoString, formatThaiDateTime, parseDateSafely } from '../utils/dateUtils';
 
 const STORAGE_KEYS = {
   USERS: 'math_app_users',
@@ -29,10 +30,12 @@ export function isValidAnonKey(key: string): boolean {
 
 export const DEFAULT_SUPABASE_SETTINGS: SupabaseSettings = {
   supabaseUrl:
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
+    (typeof import.meta !== 'undefined' &&
+      (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_SUPABASE_URL) ||
     'https://nweygxwkmleisidemdbq.supabase.co',
   supabaseAnonKey:
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+    (typeof import.meta !== 'undefined' &&
+      (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_SUPABASE_ANON_KEY) ||
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53ZXlneHdrbWxlaXNpZGVtZGJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3ODg1MTYsImV4cCI6MjEwMjM2NDUxNn0.cLEyB0w7klMCvzkMtRVmTUrvtoZAZPt61XFp9rtmL-Y',
   soundEnabled: true,
   theme: 'dark',
@@ -384,16 +387,7 @@ class SupabaseService {
 
     const latencyMs = Math.round(performance.now() - startTime);
     const now = new Date();
-    const thaiFormatted = new Intl.DateTimeFormat('th-TH', {
-      timeZone: 'Asia/Bangkok',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }).format(now);
+    const thaiFormatted = formatThaiDateTime(now, { showSeconds: true, dateStyle: 'medium' });
 
     return {
       overallSuccess: allOk,
@@ -402,11 +396,11 @@ class SupabaseService {
         : 'พบปัญหาในบางตาราง กรุณาตรวจสอบหรือรันคำสั่ง SQL ด้านล่างเพื่อแก้ไข',
       authOk: true,
       serverTimeInfo: {
-        clientIso: now.toISOString(),
+        clientIso: getThailandIsoString(now),
         thaiFormatted,
         latencyMs,
         timeSyncStatus: 'synced',
-        timeSyncMessage: `เวลาตรงกับเซิร์ฟเวอร์ (เวลาไทย: ${thaiFormatted} | Latency: ${latencyMs}ms)`,
+        timeSyncMessage: `เวลาตรงกับประเทศไทย GMT+7 (เวลา: ${thaiFormatted} | Latency: ${latencyMs}ms)`,
       },
       tables: results,
     };
@@ -429,6 +423,7 @@ class SupabaseService {
 
     const testId = `test_ping_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date();
+    const thaiIso = getThailandIsoString(now);
     const testPayload = {
       id: testId,
       username: 'sys_diagnostic_bot',
@@ -437,7 +432,7 @@ class SupabaseService {
       room: 1,
       student_no: 1,
       action: 'SIGN_IN',
-      timestamp: now.toISOString(),
+      timestamp: thaiIso,
       device: 'Diagnostic Ping Tool',
     };
 
@@ -473,22 +468,16 @@ class SupabaseService {
       await client.from('user_logs').delete().eq('id', testId);
 
       const roundtripMs = Math.round(performance.now() - start);
-      const readBackAt = new Intl.DateTimeFormat('th-TH', {
-        timeZone: 'Asia/Bangkok',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      }).format(new Date(readRes.data.timestamp));
+      const readBackAt = formatThaiDateTime(readRes.data.timestamp, {
+        showSeconds: true,
+        dateStyle: 'medium',
+      });
 
       return {
         success: true,
-        message: `ทดสอบเขียนและอ่านข้อมูลจริงสำเร็จสมบูรณ์! ข้อมูลตรงกัน 100% (เวลาบันทึก: ${readBackAt})`,
+        message: `ทดสอบเขียนและอ่านข้อมูลจริงสำเร็จสมบูรณ์! เวลาตรงกัน 100% (เวลาบันทึก: ${readBackAt})`,
         details: {
-          insertedAt: now.toISOString(),
+          insertedAt: thaiIso,
           readBackAt,
           roundtripMs,
         },
@@ -521,16 +510,8 @@ class SupabaseService {
     const client = this.getClient();
     const overallStart = performance.now();
     const now = new Date();
-    const timestampThai = new Intl.DateTimeFormat('th-TH', {
-      timeZone: 'Asia/Bangkok',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }).format(now);
+    const timestampThai = formatThaiDateTime(now, { showSeconds: true, dateStyle: 'medium' });
+    const thaiIso = getThailandIsoString(now);
 
     if (!client) {
       return {
@@ -567,7 +548,7 @@ class SupabaseService {
         room: 1,
         student_no: 99,
         email: `${uUsername}@diagnostic.test`,
-        registered_at: now.toISOString(),
+        registered_at: thaiIso,
       }]);
       if (ins.error) throw new Error(`Insert failed: ${ins.error.message}`);
       const sel = await client.from('users').select('*').eq('username', uUsername).maybeSingle();
@@ -611,7 +592,7 @@ class SupabaseService {
         score: 10,
         total_questions: 10,
         percentage: 100,
-        timestamp: now.toISOString(),
+        timestamp: thaiIso,
         details: 'ทดสอบการบันทึกคะแนนแบบฝึกหัด',
       }]);
       if (ins.error) throw new Error(`Insert failed: ${ins.error.message}`);
@@ -663,7 +644,7 @@ class SupabaseService {
         time_spent_seconds: 48,
         details: 'ทดสอบบันทึกข้อมูลเกมละเอียด',
         special_metrics: { asteroids: 14, test: true },
-        timestamp: now.toISOString(),
+        timestamp: thaiIso,
       }]);
       if (ins.error) throw new Error(`Insert failed: ${ins.error.message}`);
       const sel = await client.from('game_records').select('*').eq('id', gId).maybeSingle();
@@ -704,7 +685,7 @@ class SupabaseService {
         student_no: 1,
         action: 'SIGN_IN',
         device: 'Automated Diagnostic Engine',
-        timestamp: now.toISOString(),
+        timestamp: thaiIso,
       }]);
       if (ins.error) throw new Error(`Insert failed: ${ins.error.message}`);
       const sel = await client.from('user_logs').select('*').eq('id', lId).maybeSingle();
@@ -887,7 +868,7 @@ class SupabaseService {
           student_no: user.studentNo !== undefined && user.studentNo !== '' ? Number(user.studentNo) : null,
           email: user.email || null,
           password_hash: passwordHash,
-          registered_at: user.registeredAt || new Date().toISOString(),
+          registered_at: user.registeredAt || getThailandIsoString(),
         };
 
         const { error } = await client.from('users').insert([payload]);
@@ -900,7 +881,7 @@ class SupabaseService {
               surname: user.surname,
               email: user.email || null,
               password_hash: passwordHash,
-              registered_at: user.registeredAt || new Date().toISOString(),
+              registered_at: user.registeredAt || getThailandIsoString(),
             };
             const fallbackRes = await client.from('users').insert([fallbackPayload]);
             if (fallbackRes.error) {
@@ -1014,7 +995,7 @@ class SupabaseService {
           score: score.score,
           total_questions: score.totalQuestions,
           percentage: score.percentage,
-          timestamp: score.timestamp || new Date().toISOString(),
+          timestamp: score.timestamp || getThailandIsoString(),
           details: score.details || null,
         };
 
@@ -1031,7 +1012,7 @@ class SupabaseService {
               score: score.score,
               total_questions: score.totalQuestions,
               percentage: score.percentage,
-              timestamp: score.timestamp || new Date().toISOString(),
+              timestamp: score.timestamp || getThailandIsoString(),
               details: score.details || null,
             };
             const fallbackRes = await client.from('scores').insert([fallbackPayload]);
@@ -1067,7 +1048,7 @@ class SupabaseService {
       room: extra?.room,
       studentNo: extra?.studentNo,
       action: (action.startsWith('SIGN_IN') ? 'SIGN_IN' : 'SIGN_OUT') as 'SIGN_IN' | 'SIGN_OUT',
-      timestamp: new Date().toISOString(),
+      timestamp: getThailandIsoString(),
       device: extra?.device || (window.innerWidth < 768 ? 'Mobile/Tablet' : 'Desktop PC'),
     };
 
@@ -1143,7 +1124,7 @@ class SupabaseService {
           time_spent_seconds: gameRecord.timeSpentSeconds,
           details: gameRecord.details,
           special_metrics: gameRecord.specialMetrics || null,
-          timestamp: gameRecord.timestamp || new Date().toISOString(),
+          timestamp: gameRecord.timestamp || getThailandIsoString(),
         };
 
         const { error } = await client.from('game_records').insert([payload]);
@@ -1367,7 +1348,7 @@ class SupabaseService {
 
     // Sort chronologically (oldest to newest)
     const sortedLogs = [...logs].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      (a, b) => parseDateSafely(a.timestamp).getTime() - parseDateSafely(b.timestamp).getTime()
     );
 
     sortedLogs.forEach((log) => {
@@ -1381,7 +1362,7 @@ class SupabaseService {
         };
       }
 
-      const time = new Date(log.timestamp).getTime();
+      const time = parseDateSafely(log.timestamp).getTime();
 
       if (log.action === 'SIGN_IN') {
         userMap[uKey].lastSignIn = log.timestamp;
@@ -1424,7 +1405,7 @@ class SupabaseService {
         lastSignIn: data.lastSignIn,
         isOnline: data.isOnline,
         currentSessionStart: data.currentSignInTime
-          ? new Date(data.currentSignInTime).toISOString()
+          ? getThailandIsoString(data.currentSignInTime)
           : undefined,
         activeDurationSeconds: data.isOnline ? activeDurationSeconds : 0,
       });
@@ -1438,7 +1419,7 @@ export const supabaseService = new SupabaseService();
 
 export const SUPABASE_SQL_INIT_SCRIPT = `-- =========================================================================
 -- สคริปต์สร้างและอัปเดตตารางฐานข้อมูลสำหรับ Supabase (PostgreSQL)
--- รองรับ: ข้อมูลผู้ใช้งาน, ระดับชั้น, ห้อง, เลขที่, ผลคะแนน, ประวัติเข้าใช้งาน, เวลาตรงกับ App
+-- รองรับ: ข้อมูลผู้ใช้งาน, ระดับชั้น, ห้อง, เลขที่, ผลคะแนน, ประวัติเข้าใช้งาน, เวลาตรงกับเวลาประเทศไทย (+07:00)
 -- =========================================================================
 
 -- 1. ตารางข้อมูลผู้ใช้งาน (Users)
@@ -1451,7 +1432,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   student_no INTEGER,
   email TEXT,
   password_hash TEXT,
-  registered_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+  registered_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 -- อัปเดตคอลัมน์อัตโนมัติหากมีตาราง users อยู่แล้ว
@@ -1472,7 +1453,7 @@ CREATE TABLE IF NOT EXISTS public.scores (
   score INTEGER NOT NULL,
   total_questions INTEGER NOT NULL,
   percentage NUMERIC NOT NULL,
-  timestamp TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  timestamp TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   details TEXT
 );
 
@@ -1490,7 +1471,7 @@ CREATE TABLE IF NOT EXISTS public.user_logs (
   room INTEGER,
   student_no INTEGER,
   action TEXT NOT NULL,
-  timestamp TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  timestamp TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   device TEXT
 );
 
@@ -1519,7 +1500,7 @@ CREATE TABLE IF NOT EXISTS public.game_records (
   time_spent_seconds INTEGER NOT NULL DEFAULT 0,
   details TEXT,
   special_metrics JSONB,
-  timestamp TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+  timestamp TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 -- อัปเดตคอลัมน์อัตโนมัติหากมีตาราง game_records อยู่แล้ว
@@ -1571,5 +1552,13 @@ CREATE POLICY "Public game_records access" ON public.game_records
 
 -- สั่งรีเฟรช Schema Cache ของ Supabase REST API ทันที
 NOTIFY pgrst, 'reload schema';
+
+-- =========================================================================
+-- (ทางเลือก) คำสั่งปรับเวลาของข้อมูลเดิมในฐานข้อมูลที่มีอยู่แล้วให้บวก 7 ชั่วโมงเป็นเวลาไทย:
+-- UPDATE public.users SET registered_at = registered_at + interval '7 hours' WHERE registered_at < now();
+-- UPDATE public.scores SET timestamp = timestamp + interval '7 hours' WHERE timestamp < now();
+-- UPDATE public.user_logs SET timestamp = timestamp + interval '7 hours' WHERE timestamp < now();
+-- UPDATE public.game_records SET timestamp = timestamp + interval '7 hours' WHERE timestamp < now();
+-- =========================================================================
 `;
 

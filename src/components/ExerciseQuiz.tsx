@@ -17,6 +17,7 @@ import { generateQuestions } from '../utils/mathGenerator';
 import { DigitalKeypad } from './DigitalKeypad';
 import { soundFx } from '../services/sound';
 import { supabaseService } from '../services/supabaseService';
+import { getThailandIsoString } from '../utils/dateUtils';
 
 interface ExerciseQuizProps {
   currentUser: User | null;
@@ -125,7 +126,7 @@ export const ExerciseQuiz: React.FC<ExerciseQuizProps> = ({
       score: totalScore,
       totalQuestions: questions.length,
       percentage,
-      timestamp: new Date().toISOString(),
+      timestamp: getThailandIsoString(),
       details: `โจทย์แบบฝึกหัด (${getOpLabel(operation)}) ระดับ ${getDiffLabel(difficulty)}`,
     };
 
