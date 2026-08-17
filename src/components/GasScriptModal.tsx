@@ -37,7 +37,7 @@ export const GasScriptModal: React.FC<GasScriptModalProps> = ({
   });
 
   const [supabaseAnonKeyInput, setSupabaseAnonKeyInput] = useState(() => {
-    return supabaseService.getSettings().supabaseAnonKey || '';
+    return supabaseService.getSettings().supabaseAnonKey || DEFAULT_SUPABASE_SETTINGS.supabaseAnonKey;
   });
 
   const [savedStatus, setSavedStatus] = useState('');
