@@ -83,6 +83,17 @@ export const GasScriptModal: React.FC<GasScriptModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleResetToDefaults = () => {
+    soundFx.playClick();
+    const defaults = supabaseService.resetToDefaults();
+    setSupabaseUrlInput(defaults.supabaseUrl);
+    setSupabaseAnonKeyInput(defaults.supabaseAnonKey);
+    setSavedStatus('คืนค่าเริ่มต้นเรียบร้อยแล้ว!');
+    setTestResult(null);
+    setLiveTestResult(null);
+    setTimeout(() => setSavedStatus(''), 3000);
+  };
+
   const handleSaveSettings = () => {
     soundFx.playClick();
     supabaseService.saveSettings({
@@ -223,6 +234,15 @@ export const GasScriptModal: React.FC<GasScriptModalProps> = ({
                   >
                     <Sparkles className={`w-3.5 h-3.5 ${testingLive ? 'animate-spin' : ''}`} />
                     {testingLive ? 'กำลังทดสอบเขียน-อ่านสด...' : 'ทดสอบเขียนและอ่านข้อมูลสด (Live Test)'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResetToDefaults}
+                    className="px-3.5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition flex items-center gap-1.5"
+                    title="ล้างค่าที่จำในเครื่องนี้ และใช้ค่าระบบเริ่มต้น"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-slate-500" /> คืนค่าเริ่มต้นของระบบ
                   </button>
                 </div>
 

@@ -26,9 +26,20 @@ export function sanitizeSupabaseUrl(rawUrl: string): string {
   return url;
 }
 
+export function isValidAnonKey(key: string): boolean {
+  if (!key || typeof key !== 'string') return false;
+  const trimmed = key.trim();
+  if (trimmed.includes('...') || trimmed.length < 100) return false;
+  const parts = trimmed.split('.');
+  return parts.length === 3 && parts[0].length > 10 && parts[1].length > 10 && parts[2].length > 10;
+}
+
 export const DEFAULT_SUPABASE_SETTINGS: SupabaseSettings = {
-  supabaseUrl: 'https://nweygxwkmleisidemdbq.supabase.co',
+  supabaseUrl:
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
+    'https://nweygxwkmleisidemdbq.supabase.co',
   supabaseAnonKey:
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53ZXlneHdrbWxlaXNpZGVtZGJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3ODg1MTYsImV4cCI6MjEwMjM2NDUxNn0.cLEyB0w7klMCvzkMtRVmTUrvtoZAZPt61XFp9rtmL-Y',
   soundEnabled: true,
   theme: 'dark',
@@ -171,9 +182,11 @@ class SupabaseService {
       if (data) {
         const parsed = JSON.parse(data);
         const url = sanitizeSupabaseUrl(parsed.supabaseUrl || DEFAULT_SUPABASE_SETTINGS.supabaseUrl);
-        const key = (parsed.supabaseAnonKey && parsed.supabaseAnonKey.length > 10)
-          ? parsed.supabaseAnonKey
-          : DEFAULT_SUPABASE_SETTINGS.supabaseAnonKey;
+        // If parsed key is missing, truncated (...), or not a valid JWT, automatically use DEFAULT
+        let key = parsed.supabaseAnonKey;
+        if (!key || !isValidAnonKey(key)) {
+          key = DEFAULT_SUPABASE_SETTINGS.supabaseAnonKey;
+        }
         return {
           ...DEFAULT_SUPABASE_SETTINGS,
           ...parsed,
@@ -184,6 +197,14 @@ class SupabaseService {
     } catch {
       // ignore
     }
+    return DEFAULT_SUPABASE_SETTINGS;
+  }
+
+  public resetToDefaults(): SupabaseSettings {
+    localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+    this.client = null;
+    this.currentUrl = '';
+    this.currentKey = '';
     return DEFAULT_SUPABASE_SETTINGS;
   }
 
