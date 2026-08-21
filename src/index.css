@@ -74,3 +74,46 @@
   animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Underwater Sinking & Rising Bubble Animations */
+@keyframes bubbleFloatUp {
+  0% {
+    transform: translateY(120%) translateX(0px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.75;
+  }
+  85% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateY(-130%) translateX(18px);
+    opacity: 0;
+  }
+}
+
+@keyframes oceanDescend {
+  0% {
+    transform: translateY(-2px);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+  100% {
+    transform: translateY(-2px);
+  }
+}
+
+.animate-bubble-1 {
+  animation: bubbleFloatUp 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.animate-bubble-2 {
+  animation: bubbleFloatUp 5.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 1.2s;
+}
+.animate-bubble-3 {
+  animation: bubbleFloatUp 4.2s cubic-bezier(0.4, 0, 0.2, 1) infinite 2.5s;
+}
+.animate-ocean-descend {
+  animation: oceanDescend 4s ease-in-out infinite;
+}
+

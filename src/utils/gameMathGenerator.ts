@@ -93,7 +93,7 @@ export function generateIntegerProblem(
     optionSet.add(answer + (Math.random() > 0.5 ? 1 : -1) * Math.abs(num2));
   }
 
-  // Fill up to 4 options
+  // Ensure we have exactly 4 unique options
   let safety = 0;
   while (optionSet.size < 4 && safety < 40) {
     safety++;
@@ -104,7 +104,14 @@ export function generateIntegerProblem(
     }
   }
 
-  const options = Array.from(optionSet).sort(() => Math.random() - 0.5);
+  // Ensure options always has exactly 4 items
+  let finalOptionList = Array.from(optionSet);
+  if (finalOptionList.length > 4) {
+    // Keep answer and pick 3 other distractors
+    const otherOptions = finalOptionList.filter((x) => x !== answer).slice(0, 3);
+    finalOptionList = [answer, ...otherOptions];
+  }
+  const options = finalOptionList.sort(() => Math.random() - 0.5);
 
   let explanation = '';
   if (op === '×') {

@@ -91,16 +91,19 @@ export const SignFlashBattleGame: React.FC<SignFlashBattleGameProps> = ({ onBack
       setCorrectCount((c) => c + 1);
 
       setFeedback({ type: 'correct', sign: chosenSign });
-      setTimeout(() => setFeedback(null), 300);
-
-      nextProblem();
+      setTimeout(() => {
+        setFeedback(null);
+        nextProblem();
+      }, 250);
     } else {
       // Wrong!
       soundFx.playWrong();
       setStreak(0);
       setFeedback({ type: 'wrong', sign: chosenSign });
-      setTimeout(() => setFeedback(null), 400);
-      nextProblem();
+      setTimeout(() => {
+        setFeedback(null);
+        nextProblem();
+      }, 350);
     }
   };
 
@@ -253,26 +256,62 @@ export const SignFlashBattleGame: React.FC<SignFlashBattleGameProps> = ({ onBack
             <div className="grid grid-cols-3 gap-3 sm:gap-4">
               <button
                 onClick={() => handleChooseSign('+')}
-                className="py-6 rounded-2xl bg-gradient-to-b from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white font-mono font-black text-3xl sm:text-4xl shadow-lg shadow-emerald-950/50 border border-emerald-400/40 active:scale-95 transition flex flex-col items-center justify-center gap-1"
+                disabled={feedback !== null}
+                className={`relative py-6 rounded-2xl font-mono font-black text-3xl sm:text-4xl shadow-lg border active:scale-95 transition-all duration-150 flex flex-col items-center justify-center gap-1 overflow-hidden ${
+                  feedback?.type === 'correct' && feedback.sign === '+'
+                    ? 'bg-emerald-400 text-slate-950 border-emerald-300 ring-4 ring-emerald-300 shadow-[0_0_40px_#34d399] scale-105 brightness-125'
+                    : feedback?.type === 'wrong' && feedback.sign === '+'
+                    ? 'bg-rose-700 text-rose-200 border-rose-500 scale-95 opacity-70'
+                    : 'bg-gradient-to-b from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white shadow-emerald-950/50 border-emerald-400/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                }`}
               >
+                {feedback?.type === 'correct' && feedback.sign === '+' && (
+                  <span className="absolute inset-0 bg-white/30 animate-pulse pointer-events-none rounded-2xl" />
+                )}
                 <span>+</span>
-                <span className="text-[11px] font-sans font-bold text-emerald-200">เป็นบวก (+)</span>
+                <span className={`text-[11px] font-sans font-bold ${
+                  feedback?.type === 'correct' && feedback.sign === '+' ? 'text-slate-950 font-black' : 'text-emerald-200'
+                }`}>เป็นบวก (+)</span>
               </button>
 
               <button
                 onClick={() => handleChooseSign('-')}
-                className="py-6 rounded-2xl bg-gradient-to-b from-rose-600 to-rose-800 hover:from-rose-500 hover:to-rose-700 text-white font-mono font-black text-3xl sm:text-4xl shadow-lg shadow-rose-950/50 border border-rose-400/40 active:scale-95 transition flex flex-col items-center justify-center gap-1"
+                disabled={feedback !== null}
+                className={`relative py-6 rounded-2xl font-mono font-black text-3xl sm:text-4xl shadow-lg border active:scale-95 transition-all duration-150 flex flex-col items-center justify-center gap-1 overflow-hidden ${
+                  feedback?.type === 'correct' && feedback.sign === '-'
+                    ? 'bg-emerald-400 text-slate-950 border-emerald-300 ring-4 ring-emerald-300 shadow-[0_0_40px_#34d399] scale-105 brightness-125'
+                    : feedback?.type === 'wrong' && feedback.sign === '-'
+                    ? 'bg-rose-700 text-rose-200 border-rose-500 scale-95 opacity-70'
+                    : 'bg-gradient-to-b from-rose-600 to-rose-800 hover:from-rose-500 hover:to-rose-700 text-white shadow-rose-950/50 border-rose-400/40 hover:shadow-[0_0_20px_rgba(244,63,94,0.4)]'
+                }`}
               >
+                {feedback?.type === 'correct' && feedback.sign === '-' && (
+                  <span className="absolute inset-0 bg-white/30 animate-pulse pointer-events-none rounded-2xl" />
+                )}
                 <span>-</span>
-                <span className="text-[11px] font-sans font-bold text-rose-200">เป็นลบ (-)</span>
+                <span className={`text-[11px] font-sans font-bold ${
+                  feedback?.type === 'correct' && feedback.sign === '-' ? 'text-slate-950 font-black' : 'text-rose-200'
+                }`}>เป็นลบ (-)</span>
               </button>
 
               <button
                 onClick={() => handleChooseSign('0')}
-                className="py-6 rounded-2xl bg-gradient-to-b from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white font-mono font-black text-3xl sm:text-4xl shadow-lg shadow-slate-950/50 border border-slate-500/40 active:scale-95 transition flex flex-col items-center justify-center gap-1"
+                disabled={feedback !== null}
+                className={`relative py-6 rounded-2xl font-mono font-black text-3xl sm:text-4xl shadow-lg border active:scale-95 transition-all duration-150 flex flex-col items-center justify-center gap-1 overflow-hidden ${
+                  feedback?.type === 'correct' && feedback.sign === '0'
+                    ? 'bg-emerald-400 text-slate-950 border-emerald-300 ring-4 ring-emerald-300 shadow-[0_0_40px_#34d399] scale-105 brightness-125'
+                    : feedback?.type === 'wrong' && feedback.sign === '0'
+                    ? 'bg-rose-700 text-rose-200 border-rose-500 scale-95 opacity-70'
+                    : 'bg-gradient-to-b from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-white shadow-slate-950/50 border-slate-500/40 hover:shadow-[0_0_20px_rgba(148,163,184,0.4)]'
+                }`}
               >
+                {feedback?.type === 'correct' && feedback.sign === '0' && (
+                  <span className="absolute inset-0 bg-white/30 animate-pulse pointer-events-none rounded-2xl" />
+                )}
                 <span>0</span>
-                <span className="text-[11px] font-sans font-bold text-slate-300">เป็นศูนย์ (0)</span>
+                <span className={`text-[11px] font-sans font-bold ${
+                  feedback?.type === 'correct' && feedback.sign === '0' ? 'text-slate-950 font-black' : 'text-slate-300'
+                }`}>เป็นศูนย์ (0)</span>
               </button>
             </div>
           </div>

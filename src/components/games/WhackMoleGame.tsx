@@ -21,7 +21,9 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
   const [gameState, setGameState] = useState<'ready' | 'playing' | 'gameover'>('ready');
   const [score, setScore] = useState<number>(0);
   const [highScore, setHighScore] = useState<number>(() => getGameHighScore('whack_mole'));
-  const [timeLeft, setTimeLeft] = useState<number>(30);
+  const [currentRound, setCurrentRound] = useState<number>(1);
+  const totalRounds = 10;
+  const [questionTimeLeft, setQuestionTimeLeft] = useState<number>(100); // 100 ticks = 10.0s
   const [currentProblem, setCurrentProblem] = useState<GameMathProblem | null>(null);
   const [holes, setHoles] = useState<MoleHole[]>(() =>
     Array.from({ length: 6 }).map((_, i) => ({
@@ -33,12 +35,17 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
   );
   const [whackEffect, setWhackEffect] = useState<{ holeId: number; text: string; correct: boolean } | null>(null);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const moleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const questionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const spawnMoles = () => {
+  const spawnMolesForRound = (roundNum: number) => {
+    if (roundNum > totalRounds) {
+      endGame(score);
+      return;
+    }
+
     const prob = generateIntegerProblem('mixed', 'medium');
     setCurrentProblem(prob);
+    setQuestionTimeLeft(100);
 
     // Pick 3 random holes to activate
     const activeHoleIndices = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5).slice(0, 3);
@@ -46,16 +53,16 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
 
     const distractors = prob.options.filter((o) => o !== prob.answer);
 
-    setHoles((prev) =>
-      prev.map((hole, idx) => {
+    setHoles(
+      Array.from({ length: 6 }).map((_, idx) => {
         if (!activeHoleIndices.includes(idx)) {
-          return { ...hole, isActive: false, value: 0, isCorrect: false };
+          return { id: idx, isActive: false, value: 0, isCorrect: false };
         }
         if (idx === correctHoleIdx) {
-          return { ...hole, isActive: true, value: prob.answer, isCorrect: true };
+          return { id: idx, isActive: true, value: prob.answer, isCorrect: true };
         } else {
           const fakeVal = distractors.pop() ?? prob.answer + 2;
-          return { ...hole, isActive: true, value: fakeVal, isCorrect: false };
+          return { id: idx, isActive: true, value: fakeVal, isCorrect: false };
         }
       })
     );
@@ -64,67 +71,91 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
   const startGame = () => {
     soundFx.playPowerup();
     setScore(0);
-    setTimeLeft(30);
+    setCurrentRound(1);
     setGameState('playing');
-    spawnMoles();
+    spawnMolesForRound(1);
   };
 
-  // Game timer
+  // 10 Seconds Timer Per Question (100 ticks of 100ms = 10.0 seconds)
   useEffect(() => {
     if (gameState !== 'playing') return;
 
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          endGame(score);
+    questionTimerRef.current = setInterval(() => {
+      setQuestionTimeLeft((prev) => {
+        if (prev <= 1) {
+          // Time's up for this question (10 seconds expired)
+          soundFx.playWrong();
+          setWhackEffect({ holeId: -1, text: '⏳ หมดเวลาข้อนี้!', correct: false });
+
+          setTimeout(() => {
+            setWhackEffect(null);
+            setCurrentRound((r) => {
+              const nextR = r + 1;
+              if (nextR > totalRounds) {
+                endGame(score);
+              } else {
+                spawnMolesForRound(nextR);
+              }
+              return nextR;
+            });
+          }, 800);
+
           return 0;
         }
-        if (t <= 5) soundFx.playCountdown();
-        return t - 1;
+        if (prev === 30 || prev === 20 || prev === 10) {
+          soundFx.playCountdown();
+        }
+        return prev - 1;
       });
-    }, 1000);
+    }, 100);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (questionTimerRef.current) clearInterval(questionTimerRef.current);
     };
-  }, [gameState, score]);
-
-  // Periodic mole reshuffle if player is waiting
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-
-    moleTimerRef.current = setInterval(() => {
-      spawnMoles();
-    }, 3200);
-
-    return () => {
-      if (moleTimerRef.current) clearInterval(moleTimerRef.current);
-    };
-  }, [gameState, currentProblem]);
+  }, [gameState, currentRound, score]);
 
   const handleWhackMole = (hole: MoleHole) => {
-    if (gameState !== 'playing' || !hole.isActive) return;
+    if (gameState !== 'playing' || !hole.isActive || whackEffect) return;
 
     soundFx.playHit();
 
     if (hole.isCorrect) {
       // Whacked the right mole!
       soundFx.playCorrect();
-      const pts = 100;
+      const timeBonus = Math.round(questionTimeLeft * 0.5);
+      const pts = 100 + timeBonus;
       const newScore = score + pts;
       setScore(newScore);
+
+      // Golden particle burst from hole
+      const colIdx = hole.id % 3;
+      const rowIdx = Math.floor(hole.id / 3);
+      confetti({
+        particleCount: 45,
+        spread: 60,
+        origin: { x: 0.35 + colIdx * 0.15, y: 0.45 + rowIdx * 0.2 },
+        colors: ['#F59E0B', '#FBBF24', '#FDE047', '#FEF08A', '#F59E0B', '#FFFFFF'],
+      });
 
       if (newScore > highScore) {
         setHighScore(newScore);
         saveGameHighScore('whack_mole', newScore);
       }
 
-      setWhackEffect({ holeId: hole.id, text: `💥 +${pts}`, correct: true });
+      setWhackEffect({ holeId: hole.id, text: `✨ +${pts} ถูกต้อง!`, correct: true });
 
       setTimeout(() => {
         setWhackEffect(null);
-        spawnMoles();
-      }, 350);
+        setCurrentRound((r) => {
+          const nextR = r + 1;
+          if (nextR > totalRounds) {
+            endGame(newScore);
+          } else {
+            spawnMolesForRound(nextR);
+          }
+          return nextR;
+        });
+      }, 650);
     } else {
       // Whacked wrong mole!
       soundFx.playWrong();
@@ -133,8 +164,7 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
 
       setTimeout(() => {
         setWhackEffect(null);
-        spawnMoles();
-      }, 350);
+      }, 400);
     }
   };
 
@@ -145,7 +175,7 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
     const newHigh = saveGameHighScore('whack_mole', finalScore);
     setHighScore(newHigh);
     if (onSaveScore) {
-      onSaveScore(finalScore, `ตุ่นขุดทองจำนวนเต็ม: ${finalScore} แต้ม`);
+      onSaveScore(finalScore, `ตุ่นขุดทองจำนวนเต็ม: ${finalScore} แต้ม (10 ข้อละ 10 วินาที)`);
     }
   };
 
@@ -166,8 +196,7 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
 
         <div className="flex items-center gap-3 sm:gap-5 text-xs sm:text-sm font-mono">
           <div className="flex items-center gap-1 text-amber-400 font-bold">
-            <Timer className={`w-4 h-4 ${timeLeft <= 5 ? 'animate-ping text-rose-500' : ''}`} />
-            <span className={timeLeft <= 5 ? 'text-rose-400 font-black' : ''}>{timeLeft}s</span>
+            <span>ข้อ {Math.min(currentRound, totalRounds)} / {totalRounds}</span>
           </div>
 
           <div className="flex items-center gap-1 text-yellow-300 font-bold">
@@ -194,7 +223,7 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
                 ตุ่นขุดทองจำนวนเต็ม (Whack-a-Mole)
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                ตุ่นจะโผล่ขึ้นมาจากหลุมพร้อมป้ายตัวเลข ทุบตุ่นที่มีตัวเลขตรงกับผลลัพธ์ของการคูณ/หารจำนวนเต็มให้ทันเวลา!
+                ตุ่นจะโผล่ขึ้นมาจากหลุมพร้อมป้ายตัวเลข ทุบตุ่นที่มีตัวเลขตรงกับผลลัพธ์ของการคูณ/หารจำนวนเต็มให้ทันเวลา (10 ข้อ ข้อละ 10 วินาที)!
               </p>
             </div>
 
@@ -214,61 +243,121 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
         )}
 
         {gameState === 'playing' && currentProblem && (
-          <div className="flex-1 flex flex-col justify-between max-w-lg mx-auto w-full py-2">
-            {/* Clue Prompt */}
-            <div className="text-center">
-              <div className="inline-block px-5 py-3 rounded-2xl bg-slate-900/90 border border-amber-500/40 shadow-xl backdrop-blur-md">
+          <div className="flex-1 flex flex-col justify-between max-w-lg mx-auto w-full py-1">
+            {/* Clue Prompt & 10s Timer Bar */}
+            <div className="space-y-2 text-center">
+              <div className="inline-block px-5 py-2.5 rounded-2xl bg-slate-900/90 border border-amber-500/40 shadow-xl backdrop-blur-md">
                 <span className="text-[11px] uppercase tracking-widest text-amber-400 font-bold block mb-0.5">
-                  โจทย์สำหรับทุบตุ่น
+                  โจทย์ข้อที่ {currentRound}/{totalRounds}
                 </span>
                 <span className="text-2xl sm:text-3xl font-mono font-black text-white tracking-wider">
                   {currentProblem.expression} = ?
                 </span>
               </div>
+
+              {/* 10-second countdown bar */}
+              <div className="space-y-1 max-w-xs mx-auto">
+                <div className="flex justify-between items-center text-[11px] font-mono text-slate-400">
+                  <span>เวลาทุบตุ่น</span>
+                  <span className={`font-bold ${questionTimeLeft <= 30 ? 'text-rose-400 animate-pulse' : 'text-amber-300'}`}>
+                    ⏳ {(questionTimeLeft / 10).toFixed(1)}s / 10s
+                  </span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                  <div
+                    className={`h-full transition-all duration-100 ${
+                      questionTimeLeft > 50
+                        ? 'bg-gradient-to-r from-amber-400 to-yellow-500'
+                        : questionTimeLeft > 25
+                        ? 'bg-gradient-to-r from-orange-400 to-amber-500'
+                        : 'bg-gradient-to-r from-rose-500 to-red-600 animate-pulse'
+                    }`}
+                    style={{ width: `${questionTimeLeft}%` }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* 6 Mole Holes Grid */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 my-auto">
-              {holes.map((hole) => (
-                <div
-                  key={hole.id}
-                  onClick={() => handleWhackMole(hole)}
-                  className={`relative h-28 sm:h-32 rounded-3xl border-2 flex flex-col items-center justify-end p-2 transition cursor-pointer overflow-hidden ${
-                    hole.isActive
-                      ? 'bg-amber-950/70 border-amber-500/60 shadow-lg shadow-amber-950/50 hover:scale-105 active:scale-95'
-                      : 'bg-slate-900/70 border-slate-800'
-                  }`}
-                >
-                  {/* Mole Dirt Rim */}
-                  <div className="absolute bottom-0 inset-x-0 h-8 bg-amber-950 rounded-b-3xl border-t border-amber-800/60" />
-
-                  {/* Whack Floating Text */}
-                  {whackEffect && whackEffect.holeId === hole.id && (
-                    <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-                      <span className={`px-2 py-1 rounded-xl text-sm font-black animate-bounce ${
-                        whackEffect.correct ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
-                      }`}>
-                        {whackEffect.text}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Mole Character */}
-                  {hole.isActive && (
-                    <div className="relative z-10 flex flex-col items-center animate-bounce">
-                      <div className="text-3xl sm:text-4xl">🐹</div>
-                      <div className="px-2 py-0.5 rounded-lg bg-slate-900 border border-amber-400 font-mono font-black text-xs sm:text-sm text-amber-300 shadow-md">
-                        {hole.value}
-                      </div>
-                    </div>
-                  )}
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 my-auto relative">
+              {whackEffect && whackEffect.holeId === -1 && (
+                <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs rounded-3xl">
+                  <span className="px-4 py-2 rounded-2xl bg-rose-600 text-white font-black text-sm animate-bounce">
+                    {whackEffect.text}
+                  </span>
                 </div>
-              ))}
+              )}
+
+              {holes.map((hole) => {
+                const isGoldCorrect = whackEffect && whackEffect.holeId === hole.id && whackEffect.correct;
+
+                return (
+                  <div
+                    key={hole.id}
+                    onClick={() => handleWhackMole(hole)}
+                    className={`relative h-28 sm:h-32 rounded-3xl border-2 flex flex-col items-center justify-end p-2 transition-all duration-200 cursor-pointer overflow-hidden ${
+                      isGoldCorrect
+                        ? 'bg-gradient-to-b from-yellow-500/40 via-amber-500/25 to-amber-950 border-yellow-300 ring-4 ring-yellow-400/90 shadow-[0_0_35px_#f59e0b] scale-105 z-20'
+                        : hole.isActive
+                        ? 'bg-amber-950/70 border-amber-500/60 shadow-lg shadow-amber-950/50 hover:scale-105 active:scale-95'
+                        : 'bg-slate-900/70 border-slate-800'
+                    }`}
+                  >
+                    {/* Mole Dirt Rim */}
+                    <div className={`absolute bottom-0 inset-x-0 h-8 rounded-b-3xl border-t transition-colors ${
+                      isGoldCorrect ? 'bg-amber-900 border-yellow-400/80' : 'bg-amber-950 border-amber-800/60'
+                    }`} />
+
+                    {/* Golden Light Beams for Correct Answer */}
+                    {isGoldCorrect && (
+                      <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+                        <div className="absolute inset-0 bg-gradient-to-t from-yellow-400/30 to-amber-300/10 animate-pulse" />
+                        <div className="absolute top-1 left-2 text-yellow-300 text-xs animate-ping">✨</div>
+                        <div className="absolute top-2 right-2 text-yellow-300 text-xs animate-ping">⭐</div>
+                        <div className="absolute bottom-6 left-3 text-yellow-200 text-xs animate-ping">✨</div>
+                      </div>
+                    )}
+
+                    {/* Whack Floating Text */}
+                    {whackEffect && whackEffect.holeId === hole.id && (
+                      <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+                        <span className={`px-2.5 py-1 rounded-xl text-xs sm:text-sm font-black animate-bounce shadow-lg ${
+                          whackEffect.correct
+                            ? 'bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-400 text-amber-950 border-2 border-white shadow-[0_0_20px_#f59e0b]'
+                            : 'bg-rose-500 text-white'
+                        }`}>
+                          {whackEffect.text}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Mole Character */}
+                    {hole.isActive && (
+                      <div className={`relative z-20 flex flex-col items-center animate-bounce transition-all ${
+                        isGoldCorrect ? 'scale-110' : ''
+                      }`}>
+                        <div className={`text-3xl sm:text-4xl transition-all ${
+                          isGoldCorrect ? 'drop-shadow-[0_0_18px_#fbbf24]' : ''
+                        }`}>
+                          {isGoldCorrect ? '🐹✨' : '🐹'}
+                        </div>
+                        <div className={`px-2.5 py-0.5 rounded-lg font-mono font-black text-xs sm:text-sm transition-all duration-200 ${
+                          isGoldCorrect
+                            ? 'bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 text-amber-950 border-2 border-yellow-100 shadow-[0_0_25px_#fbbf24] scale-125'
+                            : 'bg-slate-900 border border-amber-400 text-amber-300 shadow-md'
+                        }`}>
+                          {hole.value}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Hint */}
             <div className="text-center text-xs text-slate-400 font-medium">
-              🔨 แตะหรือคลิกที่ตัวตุ่นที่ถือคำตอบที่ถูกต้องให้ไวที่สุด!
+              🔨 แตะหรือคลิกที่ตัวตุ่นที่ถือคำตอบที่ถูกต้องภายใน 10 วินาที!
             </div>
           </div>
         )}
@@ -279,7 +368,7 @@ export const WhackMoleGame: React.FC<WhackMoleGameProps> = ({ onBack, onSaveScor
               <Award className="w-10 h-10" />
             </div>
             <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-white">หมดเวลาทุบตุ่น!</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-white">สิ้นสุดเกมทุบตุ่น!</h2>
               <p className="text-slate-400 text-xs sm:text-sm mt-1">
                 คุณทุบตุ่นได้อย่างแม่นยำและรวดเร็ว
               </p>

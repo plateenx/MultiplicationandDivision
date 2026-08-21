@@ -453,9 +453,6 @@ export const ExerciseQuiz: React.FC<ExerciseQuizProps> = ({
             className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-98"
           >
             <span>{currentIndex < questions.length - 1 ? 'ข้อถัดไป' : 'สรุปผลคะแนน'}</span>
-            <span className="hidden sm:inline-flex items-center text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/20 text-indigo-100 font-semibold ml-1">
-              ↵ Enter
-            </span>
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>

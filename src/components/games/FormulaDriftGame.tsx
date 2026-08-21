@@ -28,6 +28,11 @@ export const FormulaDriftGame: React.FC<FormulaDriftGameProps> = ({ onBack, onSa
   const [laneValues, setLaneValues] = useState<{ val: number; isCorrect: boolean }[]>([]);
   const [yPos, setYPos] = useState<number>(0); // 0 (far) to 100% (at car)
   const [crashFeedback, setCrashFeedback] = useState<string | null>(null);
+  const [greenLightEffect, setGreenLightEffect] = useState<{
+    lane: number;
+    val: number;
+    pts: number;
+  } | null>(null);
 
   const loopRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -85,7 +90,7 @@ export const FormulaDriftGame: React.FC<FormulaDriftGameProps> = ({ onBack, onSa
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameState]);
 
-  // Road animation loop
+  // Road animation loop (10 seconds per question / checkpoint)
   useEffect(() => {
     if (gameState !== 'playing') return;
 
@@ -96,7 +101,8 @@ export const FormulaDriftGame: React.FC<FormulaDriftGameProps> = ({ onBack, onSa
           checkCollision();
           return 0;
         }
-        return prev + 3.5 + speedKmh * 0.01;
+        // 90% reached in 200 ticks of 50ms = exactly 10.0 seconds per question
+        return prev + 0.45;
       });
     }, 50);
 
@@ -111,7 +117,7 @@ export const FormulaDriftGame: React.FC<FormulaDriftGameProps> = ({ onBack, onSa
     setTotalCount((t) => t + 1);
     const chosen = laneValues[carLane];
     if (chosen.isCorrect) {
-      // Hit correct checkpoint!
+      // Hit correct checkpoint - Trigger brilliant GREEN LIGHT effect!
       soundFx.playCorrect();
       setCorrectCount((c) => c + 1);
       const newStreak = streak + 1;
@@ -122,6 +128,25 @@ export const FormulaDriftGame: React.FC<FormulaDriftGameProps> = ({ onBack, onSa
       const pts = 120 + newStreak * 25;
       const newScore = score + pts;
       setScore(newScore);
+
+      // Flash green light on the hit lane
+      setGreenLightEffect({
+        lane: carLane,
+        val: chosen.val,
+        pts,
+      });
+
+      // Green particle explosion
+      confetti({
+        particleCount: 40,
+        spread: 70,
+        origin: { x: carLane === 0 ? 0.35 : carLane === 1 ? 0.5 : 0.65, y: 0.72 },
+        colors: ['#10B981', '#34D399', '#6EE7B7', '#A7F3D0', '#4ADE80', '#22C55E'],
+      });
+
+      setTimeout(() => {
+        setGreenLightEffect(null);
+      }, 700);
 
       if (newScore > highScore) {
         setHighScore(newScore);
@@ -273,20 +298,57 @@ export const FormulaDriftGame: React.FC<FormulaDriftGameProps> = ({ onBack, onSa
 
         {gameState === 'playing' && currentProblem && (
           <div className="flex-1 flex flex-col justify-between max-w-md mx-auto w-full py-1">
-            {/* Dashboard Math HUD */}
-            <div className="text-center">
-              <div className="inline-block px-5 py-3 rounded-2xl bg-slate-900/90 border border-cyan-500/40 shadow-xl backdrop-blur-md">
-                <span className="text-[11px] uppercase tracking-widest text-cyan-400 font-bold block mb-0.5">
+            {/* Dashboard Math HUD (10s Countdown) */}
+            <div className="space-y-1 text-center">
+              <div className="inline-block px-5 py-2.5 rounded-2xl bg-slate-900/90 border border-cyan-500/40 shadow-xl backdrop-blur-md">
+                <span className="text-[10px] uppercase tracking-widest text-cyan-400 font-bold block mb-0.5">
                   เป้าหมายเลนถนน
                 </span>
                 <span className="text-2xl sm:text-3xl font-mono font-black text-white tracking-wider">
                   {currentProblem.expression} = ?
                 </span>
               </div>
+              <div className="flex items-center justify-between px-2 text-[11px] font-mono text-slate-400">
+                <span>เวลาเข้าชนป้าย</span>
+                <span className={`font-bold ${yPos >= 65 ? 'text-rose-400 animate-pulse' : 'text-cyan-300'}`}>
+                  ⏳ {(Math.max(0, 10 - (yPos / 90) * 10)).toFixed(1)}s / 10s
+                </span>
+              </div>
             </div>
 
             {/* 3-Lane Highway View */}
-            <div className="relative h-64 sm:h-72 bg-slate-900/80 rounded-3xl border-2 border-slate-700 my-auto overflow-hidden shadow-2xl flex flex-col justify-between">
+            <div className={`relative h-64 sm:h-72 bg-slate-900/80 rounded-3xl border-2 my-auto overflow-hidden shadow-2xl flex flex-col justify-between transition-all duration-300 ${
+              greenLightEffect
+                ? 'border-emerald-400 ring-4 ring-emerald-500/90 shadow-[0_0_40px_rgba(16,185,129,0.85)]'
+                : 'border-slate-700'
+            }`}>
+              {/* Green Light Flash & Shockwave Overlay */}
+              {greenLightEffect && (
+                <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden">
+                  {/* Global Green Ambient Light Wave */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/35 via-emerald-400/15 to-transparent animate-pulse" />
+
+                  {/* Vertical Neon Laser Beam on Hit Lane */}
+                  <div
+                    className="absolute inset-y-0 w-1/3 bg-gradient-to-t from-emerald-400/60 via-emerald-300/30 to-emerald-500/10 transition-all duration-200"
+                    style={{ left: `${greenLightEffect.lane * 33.333}%` }}
+                  >
+                    {/* Centered intense light laser core */}
+                    <div className="w-1.5 h-full mx-auto bg-white/90 shadow-[0_0_20px_#10b981] animate-ping" />
+                  </div>
+
+                  {/* Floating Green Hit Badge */}
+                  <div
+                    className="absolute bottom-16 w-1/3 flex justify-center items-center animate-bounce"
+                    style={{ left: `${greenLightEffect.lane * 33.333}%` }}
+                  >
+                    <div className="px-3.5 py-1.5 rounded-full bg-emerald-500 text-slate-950 font-mono font-black text-xs sm:text-sm shadow-[0_0_25px_#10b981] border-2 border-emerald-200 flex items-center gap-1">
+                      <span>✨ +{greenLightEffect.pts} ถูกต้อง!</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {crashFeedback && (
                 <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs">
                   <span className="px-4 py-2 rounded-2xl bg-rose-600 text-white text-sm font-black animate-bounce">
@@ -303,13 +365,20 @@ export const FormulaDriftGame: React.FC<FormulaDriftGameProps> = ({ onBack, onSa
                 className="absolute left-0 right-0 grid grid-cols-3 px-2 z-10 transition-all duration-75"
                 style={{ top: `${yPos}%` }}
               >
-                {laneValues.map((lane, idx) => (
-                  <div key={idx} className="flex justify-center">
-                    <div className="px-3 py-1.5 rounded-xl bg-gradient-to-tr from-indigo-900 to-cyan-900 border border-cyan-400 font-mono font-black text-base sm:text-lg text-white shadow-lg shadow-cyan-950/80">
-                      {lane.val}
+                {laneValues.map((lane, idx) => {
+                  const isGreenTarget = greenLightEffect && greenLightEffect.lane === idx;
+                  return (
+                    <div key={idx} className="flex justify-center">
+                      <div className={`px-3 py-1.5 rounded-xl font-mono font-black text-base sm:text-lg transition-all duration-150 ${
+                        isGreenTarget
+                          ? 'bg-gradient-to-tr from-emerald-600 to-teal-400 border-2 border-white text-white shadow-[0_0_30px_#10b981] scale-125'
+                          : 'bg-gradient-to-tr from-indigo-900 to-cyan-900 border border-cyan-400 text-white shadow-lg shadow-cyan-950/80'
+                      }`}>
+                        {lane.val}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Player Race Car (Bottom of screen) */}
@@ -320,7 +389,11 @@ export const FormulaDriftGame: React.FC<FormulaDriftGameProps> = ({ onBack, onSa
                     gridColumnStart: carLane + 1,
                   }}
                 >
-                  <div className="text-4xl sm:text-5xl animate-bounce">
+                  <div className={`text-4xl sm:text-5xl animate-bounce transition-all ${
+                    greenLightEffect
+                      ? 'drop-shadow-[0_0_24px_#10b981] scale-110'
+                      : ''
+                  }`}>
                     🏎️
                   </div>
                 </div>

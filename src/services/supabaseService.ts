@@ -1156,6 +1156,39 @@ class SupabaseService {
     }
   }
 
+  public async fetchUsers(): Promise<User[]> {
+    try {
+      const client = this.getClient();
+      if (client) {
+        const { data, error } = await client
+          .from('users')
+          .select('username, name, surname, grade, room, student_no, email, registered_at')
+          .order('grade', { ascending: true })
+          .order('room', { ascending: true })
+          .order('student_no', { ascending: true });
+
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const formatted: User[] = data.map((item) => ({
+            username: item.username,
+            name: item.name,
+            surname: item.surname,
+            grade: item.grade ?? undefined,
+            room: item.room ?? undefined,
+            studentNo: item.student_no ?? undefined,
+            email: item.email || '',
+            registeredAt: item.registered_at,
+          }));
+          localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(formatted));
+          return formatted;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase fetchUsers error, fallback to local:', err);
+    }
+
+    return this.getLocalUsers();
+  }
+
   public async fetchScores(): Promise<ScoreRecord[]> {
     try {
       const client = this.getClient();

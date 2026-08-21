@@ -4,7 +4,8 @@ import {
   Sparkles,
   Calculator,
   Gamepad2,
-  Trophy,
+  Award,
+  BarChart3,
   Database,
   Sun,
   Moon,
@@ -43,7 +44,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'interactive', label: 'สื่อ Interactive', icon: Sparkles },
     { id: 'exercise', label: 'แบบฝึกหัด', icon: Calculator },
     { id: 'games', label: 'เกม', icon: Gamepad2 },
-    { id: 'leaderboard', label: 'คะแนน & ประวัติ', icon: Trophy },
+    { id: 'scores', label: 'คะแนน', icon: Award },
+    { id: 'analytics', label: 'วิเคราะห์', icon: BarChart3 },
   ];
 
   return (

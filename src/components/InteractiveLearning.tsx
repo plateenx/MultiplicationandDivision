@@ -1,17 +1,103 @@
 import React, { useState } from 'react';
 import {
   Sparkles,
-  RotateCcw,
+  Shuffle,
   CheckCircle2,
   Calculator,
   Delete,
   ArrowRightLeft,
+  Info,
 } from 'lucide-react';
 import {
   getMultiplicationSignRuleText,
   getDivisionSignRuleText,
 } from '../utils/mathGenerator';
 import { soundFx } from '../services/sound';
+
+function getGcd(x: number, y: number): number {
+  let a = Math.abs(x);
+  let b = Math.abs(y);
+  while (b) {
+    const t = b;
+    b = a % b;
+    a = t;
+  }
+  return a || 1;
+}
+
+interface FractionResult {
+  isDivisible: boolean;
+  quotient: number;
+  isNegative: boolean;
+  simplifiedNum: number;
+  simplifiedDen: number;
+  wholeNumber: number;
+  remainder: number;
+  fractionStr: string;
+  mixedNumberStr?: string;
+  decimalStr: string;
+}
+
+function calculateFractionInfo(a: number, b: number): FractionResult {
+  if (b === 0) {
+    return {
+      isDivisible: false,
+      quotient: 0,
+      isNegative: false,
+      simplifiedNum: 0,
+      simplifiedDen: 1,
+      wholeNumber: 0,
+      remainder: 0,
+      fractionStr: 'หาค่าไม่ได้ (ตัวหารเป็น 0)',
+      decimalStr: 'undefined',
+    };
+  }
+
+  const isNeg = (a < 0 && b > 0) || (a > 0 && b < 0);
+  const absA = Math.abs(a);
+  const absB = Math.abs(b);
+
+  if (absA % absB === 0) {
+    const q = absA / absB;
+    const finalQ = isNeg ? -q : q;
+    return {
+      isDivisible: true,
+      quotient: finalQ,
+      isNegative: isNeg,
+      simplifiedNum: q,
+      simplifiedDen: 1,
+      wholeNumber: q,
+      remainder: 0,
+      fractionStr: `${finalQ}`,
+      decimalStr: `${finalQ}`,
+    };
+  }
+
+  const gcd = getGcd(absA, absB);
+  const simpNum = absA / gcd;
+  const simpDen = absB / gcd;
+  const whole = Math.floor(simpNum / simpDen);
+  const rem = simpNum % simpDen;
+
+  const signPrefix = isNeg ? '-' : '';
+  const fractionStr = `${signPrefix}${simpNum}/${simpDen}`;
+  const mixedNumberStr = whole > 0 ? `${signPrefix}${whole} ${rem}/${simpDen}` : undefined;
+  const decVal = absA / absB;
+  const decimalStr = `${signPrefix}${parseFloat(decVal.toFixed(4))}`;
+
+  return {
+    isDivisible: false,
+    quotient: 0,
+    isNegative: isNeg,
+    simplifiedNum: simpNum,
+    simplifiedDen: simpDen,
+    wholeNumber: whole,
+    remainder: rem,
+    fractionStr,
+    mixedNumberStr,
+    decimalStr,
+  };
+}
 
 export const InteractiveLearning: React.FC = () => {
   const [numA, setNumA] = useState<number>(-8);
@@ -40,6 +126,37 @@ export const InteractiveLearning: React.FC = () => {
 
     setNumA(valA);
     setNumB(valB);
+  };
+
+  // Randomize a new math problem (Guarantees exact division in division mode)
+  const handleRandomProblem = () => {
+    soundFx.playClick();
+    const getRandomSign = () => (Math.random() < 0.5 ? -1 : 1);
+
+    let a = 1;
+    let b = 1;
+
+    if (operation === 'multiplication') {
+      const magA = Math.floor(Math.random() * 12) + 2; // 2 to 13
+      const magB = Math.floor(Math.random() * 12) + 2; // 2 to 13
+      a = magA * getRandomSign();
+      b = magB * getRandomSign();
+    } else {
+      // Division: generate clean integer division without remainder
+      const magB = Math.floor(Math.random() * 11) + 2; // Divisor 2 to 12
+      const magQuotient = Math.floor(Math.random() * 12) + 1; // Quotient 1 to 12
+      b = magB * getRandomSign();
+      const quotient = magQuotient * getRandomSign();
+      a = b * quotient; // Dividend guarantees exact integer division
+    }
+
+    const strValA = String(a);
+    const strValB = String(b);
+
+    setInputA(strValA);
+    setInputB(strValB);
+    setNumA(a);
+    setNumB(b);
   };
 
   // Digital Keypad Handler
@@ -89,12 +206,13 @@ export const InteractiveLearning: React.FC = () => {
   };
 
   // Calculation outputs
+  const fractionInfo = calculateFractionInfo(numA, numB);
+  const isDivisible = operation === 'multiplication' ? true : fractionInfo.isDivisible;
+
   const resultValue =
     operation === 'multiplication'
       ? numA * numB
-      : Math.floor(numA / numB);
-
-  const isDivisible = operation === 'division' ? numA % numB === 0 : true;
+      : fractionInfo.quotient;
 
   const strA = numA < 0 ? `(${numA})` : `${numA}`;
   const strB = numB < 0 ? `(${numB})` : `${numB}`;
@@ -143,6 +261,12 @@ export const InteractiveLearning: React.FC = () => {
           24 ÷ (-6)
         </button>
         <button
+          onClick={() => handleApplyNumbers('99', '8', 'division')}
+          className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/70 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-bold whitespace-nowrap transition shrink-0"
+        >
+          99 ÷ 8 (เศษส่วน)
+        </button>
+        <button
           onClick={() => handleApplyNumbers('-15', '4', 'multiplication')}
           className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold whitespace-nowrap transition shrink-0"
         >
@@ -158,7 +282,7 @@ export const InteractiveLearning: React.FC = () => {
 
       {/* Main Interactive Control Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
-        {/* Left Control Panel (Ordered 1.ตัวตั้ง 2.ตัวคูณ/หาร 3.ปุ่มรีเซ็ต) */}
+        {/* Left Control Panel (Ordered 1.ตัวตั้ง 2.ตัวคูณ/หาร 3.ปุ่มสุ่มโจทย์) */}
         <div className="md:col-span-5 p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
           {/* Operation Selector */}
           <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -199,11 +323,11 @@ export const InteractiveLearning: React.FC = () => {
             </div>
           </div>
 
-          {/* 1. ตัวตั้ง (A), 2. ตัวคูณ/ตัวหาร (B), 3. ปุ่มรีเซ็ตค่าเริ่มต้น อยู่ในบรรทัดเดียวกัน ขนาดเท่ากัน */}
+          {/* 1. ตัวตั้ง (A), 2. ตัวคูณ/ตัวหาร (B), 3. ปุ่มสุ่มโจทย์ อยู่ในบรรทัดเดียวกัน ขนาดเท่ากัน */}
           <div className="grid grid-cols-3 gap-2 items-end">
             {/* 1. ตัวตั้ง (A) */}
             <div>
-              <label className="block text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">
+              <label className="block text-center text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">
                 ตัวตั้ง
               </label>
               <div
@@ -211,30 +335,21 @@ export const InteractiveLearning: React.FC = () => {
                   soundFx.playClick();
                   setActiveTarget('A');
                 }}
-                className={`h-[42px] px-2 sm:px-2.5 rounded-xl border cursor-pointer transition flex items-center justify-between ${
+                className={`h-[42px] px-2 sm:px-2.5 rounded-xl border cursor-pointer transition flex items-center justify-center ${
                   activeTarget === 'A'
                     ? 'bg-indigo-50/90 dark:bg-indigo-950/70 border-indigo-500 ring-2 ring-indigo-500/30'
-                    : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                    : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                <span className="font-mono font-extrabold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
+                <span className="font-mono font-extrabold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate text-center">
                   {inputA || '0'}
-                </span>
-                <span
-                  className={`text-[8px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded shrink-0 ${
-                    activeTarget === 'A'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  {activeTarget === 'A' ? 'เลือกอยู่' : 'เลือก'}
                 </span>
               </div>
             </div>
 
             {/* 2. ตัวคูณ / ตัวหาร (B) */}
             <div>
-              <label className="block text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">
+              <label className="block text-center text-[10px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1 truncate">
                 {operation === 'multiplication' ? 'ตัวคูณ' : 'ตัวหาร'}
               </label>
               <div
@@ -242,36 +357,28 @@ export const InteractiveLearning: React.FC = () => {
                   soundFx.playClick();
                   setActiveTarget('B');
                 }}
-                className={`h-[42px] px-2 sm:px-2.5 rounded-xl border cursor-pointer transition flex items-center justify-between ${
+                className={`h-[42px] px-2 sm:px-2.5 rounded-xl border cursor-pointer transition flex items-center justify-center ${
                   activeTarget === 'B'
                     ? 'bg-indigo-50/90 dark:bg-indigo-950/70 border-indigo-500 ring-2 ring-indigo-500/30'
-                    : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                    : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                <span className="font-mono font-extrabold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate">
+                <span className="font-mono font-extrabold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate text-center">
                   {inputB || '0'}
-                </span>
-                <span
-                  className={`text-[8px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded shrink-0 ${
-                    activeTarget === 'B'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  {activeTarget === 'B' ? 'เลือกอยู่' : 'เลือก'}
                 </span>
               </div>
             </div>
 
-            {/* 3. ปุ่มรีเซ็ตค่าเริ่มต้น */}
+            {/* 3. ปุ่มสุ่มโจทย์ */}
             <div>
               <button
                 type="button"
-                onClick={() => handleApplyNumbers('1', '1', operation)}
-                className="w-full h-[42px] px-2 sm:px-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] sm:text-xs font-bold flex items-center justify-center gap-1 transition active:scale-98"
+                onClick={handleRandomProblem}
+                className="w-full h-[42px] px-1 sm:px-2 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 transition active:scale-98 shadow-2xs whitespace-nowrap"
+                title="สุ่มโจทย์คณิตศาสตร์ใหม่"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                <span className="truncate">รีเซ็ต (1, 1)</span>
+                <Shuffle className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span className="whitespace-nowrap font-bold">สุ่มโจทย์</span>
               </button>
             </div>
           </div>
@@ -386,36 +493,101 @@ export const InteractiveLearning: React.FC = () => {
               <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">
                 2. คิดเฉพาะตัวเลข:
               </span>
-              <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs mt-1">
-                {Math.abs(numA)} {operation === 'multiplication' ? '×' : '÷'} {Math.abs(numB)} = {Math.abs(resultValue)}
-              </p>
+              {operation === 'multiplication' ? (
+                <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs mt-1">
+                  {Math.abs(numA)} × {Math.abs(numB)} = {Math.abs(resultValue)}
+                </p>
+              ) : isDivisible ? (
+                <p className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs mt-1">
+                  {Math.abs(numA)} ÷ {Math.abs(numB)} = {Math.abs(fractionInfo.quotient)}
+                </p>
+              ) : (
+                <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs mt-1 flex items-center gap-1.5 flex-wrap">
+                  <span>{Math.abs(numA)} ÷ {Math.abs(numB)} =</span>
+                  <div className="inline-flex items-center">
+                    <span className="inline-flex flex-col items-center leading-none text-center">
+                      <span className="border-b border-indigo-400 pb-0.5 px-0.5 text-[11px]">{fractionInfo.simplifiedNum}</span>
+                      <span className="pt-0.5 px-0.5 text-[11px]">{fractionInfo.simplifiedDen}</span>
+                    </span>
+                  </div>
+                  {fractionInfo.mixedNumberStr && (
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-sans">
+                      (หรือ {fractionInfo.wholeNumber} {fractionInfo.remainder}/{fractionInfo.simplifiedDen})
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Final Answer Badge */}
-          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between">
-            <div>
+          <div className="p-3 sm:p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between gap-3">
+            <div className="space-y-1 overflow-hidden">
               <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-400 uppercase block">
                 คำตอบสุดท้าย:
               </span>
-              <span className="text-xl sm:text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
-                {expressionText} = {resultValue}
-              </span>
+
+              {operation === 'multiplication' || isDivisible ? (
+                <span className="text-xl sm:text-2xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400 block truncate">
+                  {expressionText} = {resultValue}
+                </span>
+              ) : (
+                /* Non-divisible Division: Display as simplified fraction and mixed number */
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap font-mono">
+                  <span className="text-lg sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                    {expressionText} =
+                  </span>
+
+                  <div className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-extrabold text-lg sm:text-2xl">
+                    {fractionInfo.isNegative && <span className="mr-0.5">-</span>}
+                    <div className="inline-flex flex-col items-center justify-center text-center leading-none">
+                      <span className="border-b-2 border-emerald-600 dark:border-emerald-400 px-1 pb-0.5 text-base sm:text-xl font-bold">
+                        {fractionInfo.simplifiedNum}
+                      </span>
+                      <span className="px-1 pt-0.5 text-base sm:text-xl font-bold">
+                        {fractionInfo.simplifiedDen}
+                      </span>
+                    </div>
+                  </div>
+
+                  {fractionInfo.mixedNumberStr && (
+                    <span className="text-xs sm:text-sm font-bold text-emerald-700 dark:text-emerald-300 font-sans bg-emerald-100/80 dark:bg-emerald-900/60 px-2 py-0.5 rounded-lg border border-emerald-300/60 dark:border-emerald-700/60">
+                      หรือ {fractionInfo.isNegative ? '-' : ''}{fractionInfo.wholeNumber}
+                      <span className="inline-flex flex-col items-center justify-center text-[10px] sm:text-xs leading-none mx-1 align-middle">
+                        <span className="border-b border-emerald-600 dark:border-emerald-400 px-0.5">{fractionInfo.remainder}</span>
+                        <span className="px-0.5">{fractionInfo.simplifiedDen}</span>
+                      </span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
+
             <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
 
-          {!isDivisible && (
-            <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-              * การหารลงตัวแบบไม่มีเศษ
-            </p>
+          {/* Context Note */}
+          {operation === 'division' && (
+            isDivisible ? (
+              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> การหารลงตัว (ไม่มีเศษ)
+              </p>
+            ) : (
+              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-[11px] text-amber-800 dark:text-amber-200 font-medium flex items-start gap-1.5">
+                <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold">การหารไม่ลงตัว:</span> นำ {Math.abs(numA)} หารด้วย {Math.abs(numB)} มีเศษเหลือ {fractionInfo.remainder} จึงแสดงผลลัพธ์ในรูปเศษส่วนอย่างต่ำ <strong className="font-mono">{fractionInfo.fractionStr}</strong> {fractionInfo.mixedNumberStr ? `(จำนวนคละ: ${fractionInfo.mixedNumberStr})` : ''}
+                </div>
+              </div>
+            )
           )}
         </div>
       </div>
     </div>
   );
 };
+
 
 

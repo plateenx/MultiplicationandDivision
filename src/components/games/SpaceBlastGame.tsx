@@ -57,7 +57,7 @@ export const SpaceBlastGame: React.FC<SpaceBlastGameProps> = ({ onBack, onSaveSc
     spawnNextProblem();
   };
 
-  // Asteroid timer countdown
+  // Asteroid timer countdown (10 seconds per question)
   useEffect(() => {
     if (gameState !== 'playing') return;
 
@@ -68,7 +68,7 @@ export const SpaceBlastGame: React.FC<SpaceBlastGameProps> = ({ onBack, onSaveSc
           handleAsteroidCrash();
           return 100;
         }
-        return prev - 2; // ~5 seconds per asteroid
+        return prev - 1; // 100 ticks * 100ms = exactly 10.0 seconds per asteroid
       });
     }, 100);
 
@@ -276,14 +276,22 @@ export const SpaceBlastGame: React.FC<SpaceBlastGameProps> = ({ onBack, onSaveSc
 
         {gameState === 'playing' && currentProblem && (
           <div className="flex-1 flex flex-col justify-between max-w-lg mx-auto w-full py-2">
-            {/* Asteroid Countdown Bar */}
-            <div className="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden border border-slate-700">
-              <div
-                className={`h-full transition-all duration-100 ${
-                  progress > 50 ? 'bg-emerald-500' : progress > 25 ? 'bg-amber-500' : 'bg-rose-500 animate-pulse'
-                }`}
-                style={{ width: `${progress}%` }}
-              />
+            {/* Asteroid Countdown Bar (10 Seconds) */}
+            <div className="space-y-1">
+              <div className="flex justify-between items-center text-[11px] font-mono text-slate-400">
+                <span>ดาวเคราะห์พุ่งเข้ามา</span>
+                <span className={`font-bold ${progress <= 30 ? 'text-rose-400 animate-pulse' : 'text-cyan-300'}`}>
+                  ⏳ {(progress / 10).toFixed(1)}s / 10s
+                </span>
+              </div>
+              <div className="w-full bg-slate-800/80 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                <div
+                  className={`h-full transition-all duration-100 ${
+                    progress > 50 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : progress > 25 ? 'bg-gradient-to-r from-amber-500 to-orange-400' : 'bg-gradient-to-r from-rose-500 to-red-600 animate-pulse'
+                  }`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
 
             {/* Target Asteroid Display */}

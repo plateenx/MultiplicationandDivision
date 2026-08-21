@@ -96,7 +96,7 @@ export const MemoryCardsGame: React.FC<MemoryCardsGameProps> = ({ onBack, onSave
   const handleCardClick = (card: MemoryCard) => {
     if (gameState !== 'playing' || card.isFlipped || card.isMatched || flippedCards.length >= 2) return;
 
-    soundFx.playClick();
+    soundFx.playCardFlip();
     const updatedCards = cards.map((c) => (c.id === card.id ? { ...c, isFlipped: true } : c));
     setCards(updatedCards);
 
@@ -143,6 +143,7 @@ export const MemoryCardsGame: React.FC<MemoryCardsGameProps> = ({ onBack, onSave
         // No match
         soundFx.playWrong();
         setTimeout(() => {
+          soundFx.playCardFlip();
           setCards((prev) =>
             prev.map((c) => (c.id === card1.id || c.id === card2.id ? { ...c, isFlipped: false } : c))
           );
@@ -170,7 +171,7 @@ export const MemoryCardsGame: React.FC<MemoryCardsGameProps> = ({ onBack, onSave
   const stars = flipsCount <= 16 ? 3 : flipsCount <= 24 ? 2 : 1;
 
   return (
-    <div className={`relative w-full max-w-3xl mx-auto bg-slate-950 text-white rounded-3xl border transition-all duration-200 shadow-2xl overflow-hidden min-h-[540px] flex flex-col select-none ${
+    <div className={`relative w-full max-w-3xl mx-auto bg-slate-950 text-white rounded-3xl border transition-all duration-300 shadow-2xl overflow-hidden min-h-[540px] flex flex-col select-none ${
       matchFlash ? 'border-pink-400 ring-8 ring-pink-500/80 shadow-pink-500/50' : 'border-violet-500/30'
     }`}>
       {/* Background */}
@@ -211,7 +212,7 @@ export const MemoryCardsGame: React.FC<MemoryCardsGameProps> = ({ onBack, onSave
       <div className="relative z-10 flex-1 flex flex-col justify-between p-4 sm:p-6">
         {gameState === 'ready' && (
           <div className="my-auto text-center max-w-md mx-auto space-y-5 animate-fadeIn">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-4xl shadow-lg shadow-violet-500/20">
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-4xl shadow-lg shadow-violet-500/30">
               🃏
             </div>
             <div>
@@ -219,7 +220,7 @@ export const MemoryCardsGame: React.FC<MemoryCardsGameProps> = ({ onBack, onSave
                 จับคู่การ์ดความจำ (Memory Card Flip)
               </h2>
               <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                ฝึกความจำและการคำนวณ พลิกเปิดการ์ดจับคู่ระหว่าง <strong>"การ์ดโจทย์การคูณ/หาร"</strong> กับ <strong>"การ์ดคำตอบที่ถูกต้อง"</strong> เมื่อจับคู่ถูกจะมีพลุเฉลิมฉลอง!
+                การ์ดเรืองแสงสามมิติ! พลิกเปิดการ์ดจับคู่ระหว่าง <strong>"การ์ดโจทย์การคูณ/หาร"</strong> กับ <strong>"การ์ดคำตอบที่ถูกต้อง"</strong> พร้อมเสียงหมุนการ์ดสามมิติและพลุเฉลิมฉลอง!
               </p>
             </div>
 
@@ -231,43 +232,74 @@ export const MemoryCardsGame: React.FC<MemoryCardsGameProps> = ({ onBack, onSave
 
             <button
               onClick={startGame}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-extrabold text-base shadow-lg shadow-violet-500/30 active:scale-95 transition"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-extrabold text-base shadow-lg shadow-violet-500/40 hover:shadow-violet-500/60 active:scale-95 transition"
             >
-              🃏 เริ่มเปิดการ์ด (START)
+              🃏 เริ่มเปิดการ์ดเรืองแสง (START)
             </button>
           </div>
         )}
 
         {gameState === 'playing' && (
           <div className="flex-1 flex flex-col justify-between max-w-lg mx-auto w-full py-1">
-            {/* 4x3 Cards Grid */}
-            <div className="grid grid-cols-4 gap-2.5 sm:gap-3 my-auto">
-              {cards.map((card) => (
-                <button
-                  key={card.id}
-                  onClick={() => handleCardClick(card)}
-                  disabled={card.isMatched}
-                  className={`h-20 sm:h-24 rounded-2xl border-2 font-mono font-bold transition-all transform active:scale-95 flex items-center justify-center p-2 shadow-md ${
-                    card.isMatched
-                      ? 'bg-emerald-950/40 border-emerald-500/30 opacity-40 cursor-default'
-                      : card.isFlipped
-                      ? card.type === 'expression'
-                        ? 'bg-gradient-to-br from-indigo-900 to-slate-900 border-indigo-400 text-white text-sm sm:text-base font-black scale-105'
-                        : 'bg-gradient-to-br from-violet-900 to-slate-900 border-violet-400 text-amber-300 text-lg sm:text-xl font-black scale-105'
-                      : 'bg-slate-900 hover:bg-slate-800 border-slate-700 hover:border-violet-500 text-slate-500'
-                  }`}
-                >
-                  {card.isFlipped || card.isMatched ? (
-                    <span className="text-center">{card.content}</span>
-                  ) : (
-                    <HelpCircle className="w-6 h-6 text-violet-400/50" />
-                  )}
-                </button>
-              ))}
+            {/* 4x3 Cards Grid with 3D Perspective */}
+            <div className="grid grid-cols-4 gap-2.5 sm:gap-3.5 my-auto">
+              {cards.map((card) => {
+                const isRevealed = card.isFlipped || card.isMatched;
+                return (
+                  <div
+                    key={card.id}
+                    className="h-20 sm:h-24 [perspective:1000px]"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleCardClick(card)}
+                      disabled={card.isMatched}
+                      aria-label={`การ์ดใบที่ ${card.id + 1}`}
+                      className={`relative w-full h-full rounded-2xl transition-transform duration-500 [transform-style:preserve-3d] focus:outline-none ${
+                        isRevealed ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'
+                      }`}
+                    >
+                      {/* Front Face (Unflipped Back of Card - Glowing Button) */}
+                      <div
+                        className={`absolute inset-0 w-full h-full rounded-2xl [backface-visibility:hidden] flex flex-col items-center justify-center p-2 border-2 transition-all cursor-pointer ${
+                          card.isMatched
+                            ? 'opacity-0 pointer-events-none'
+                            : 'bg-gradient-to-br from-slate-900 via-violet-950/60 to-slate-950 border-violet-500/60 shadow-[0_0_15px_rgba(139,92,246,0.35)] hover:border-violet-300 hover:shadow-[0_0_22px_rgba(168,85,247,0.75)] hover:scale-[1.03] active:scale-95'
+                        }`}
+                      >
+                        {/* Glowing neon corner accents */}
+                        <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-violet-400/80 shadow-[0_0_6px_#a855f7]" />
+                        <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-violet-400/80 shadow-[0_0_6px_#a855f7]" />
+                        <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-violet-400/80 shadow-[0_0_6px_#a855f7]" />
+                        <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-violet-400/80 shadow-[0_0_6px_#a855f7]" />
+
+                        <div className="w-8 h-8 rounded-xl bg-violet-600/30 border border-violet-400/50 flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.4)]">
+                          <HelpCircle className="w-5 h-5 text-violet-300" />
+                        </div>
+                      </div>
+
+                      {/* Back Face (Revealed Card Front - 3D Rotated & Glowing) */}
+                      <div
+                        className={`absolute inset-0 w-full h-full rounded-2xl [backface-visibility:hidden] [transform:rotateY(180deg)] flex items-center justify-center p-2 border-2 font-mono font-black select-none ${
+                          card.isMatched
+                            ? 'bg-gradient-to-br from-emerald-950/90 via-teal-950 to-slate-950 border-emerald-400/80 text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.6)] cursor-default'
+                            : card.type === 'expression'
+                            ? 'bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 border-cyan-400 text-cyan-200 text-sm sm:text-base shadow-[0_0_24px_rgba(6,182,212,0.7)]'
+                            : 'bg-gradient-to-br from-fuchsia-950 via-purple-950 to-slate-950 border-pink-400 text-yellow-300 text-lg sm:text-2xl shadow-[0_0_24px_rgba(236,72,153,0.7)]'
+                        }`}
+                      >
+                        {/* Shimmer reflection */}
+                        <div className="absolute top-1 left-2 right-2 h-1/3 bg-white/10 rounded-t-xl pointer-events-none" />
+                        <span className="text-center drop-shadow-md z-10">{card.content}</span>
+                      </div>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="text-center text-xs text-slate-400 font-medium">
-              💡 จับคู่โจทย์การคูณ/หาร กับ ผลลัพธ์ตัวเลขที่ตรงกัน (ตอบถูกมีพลุเฉลิมฉลอง!)
+              ✨ แตะการ์ดเรืองแสงเพื่อหมุนแบบสามมิติ จับคู่โจทย์และคำตอบให้ถูกต้อง
             </div>
           </div>
         )}
@@ -279,7 +311,7 @@ export const MemoryCardsGame: React.FC<MemoryCardsGameProps> = ({ onBack, onSave
                 <Star
                   key={i}
                   className={`w-8 h-8 ${
-                    i < stars ? 'fill-amber-400 text-amber-400' : 'text-slate-700'
+                    i < stars ? 'fill-amber-400 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]' : 'text-slate-700'
                   }`}
                 />
               ))}
@@ -316,7 +348,7 @@ export const MemoryCardsGame: React.FC<MemoryCardsGameProps> = ({ onBack, onSave
             <div className="flex gap-3">
               <button
                 onClick={startGame}
-                className="flex-1 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2"
+                className="flex-1 py-3.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-sm shadow-md shadow-violet-500/30 transition flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>เล่นใหม่อีกครั้ง</span>

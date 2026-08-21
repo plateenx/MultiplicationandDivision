@@ -16,13 +16,16 @@ import {
   Award,
   Filter,
   CheckCircle2,
+  Shield,
+  Wand2,
+  Anchor,
 } from 'lucide-react';
 import { User, GameRecord } from '../../types';
 import { supabaseService } from '../../services/supabaseService';
 import { soundFx } from '../../services/sound';
 import { getThailandIsoString } from '../../utils/dateUtils';
 
-// 10 Game Components
+// 15 Game Components
 import { SpaceBlastGame } from './SpaceBlastGame';
 import { SignFlashBattleGame } from './SignFlashBattleGame';
 import { TimeBombDefuseGame } from './TimeBombDefuseGame';
@@ -33,6 +36,12 @@ import { WhackMoleGame } from './WhackMoleGame';
 import { MathMatrixGame } from './MathMatrixGame';
 import { MemoryCardsGame } from './MemoryCardsGame';
 import { BalloonPopGame } from './BalloonPopGame';
+// 5 New Exciting Mixed Games
+import { CyberLaserDefenseGame } from './CyberLaserDefenseGame';
+import { ThunderStrikerGame } from './ThunderStrikerGame';
+import { VolcanoEscapeGame } from './VolcanoEscapeGame';
+import { MagicPotionAlchemyGame } from './MagicPotionAlchemyGame';
+import { DeepSeaTreasureGame } from './DeepSeaTreasureGame';
 
 interface GameHubProps {
   currentUser: User | null;
@@ -183,6 +192,72 @@ const GAMES_LIST: GameDefinition[] = [
     borderClass: 'border-pink-500/40 hover:border-pink-400',
     glowClass: 'shadow-pink-500/20',
   },
+  // 5 New Exciting Mixed Games
+  {
+    id: 'cyber_defense',
+    number: 11,
+    title: 'ไซเบอร์เลเซอร์ดีเฟนส์',
+    subtitle: 'Photon Laser Defense',
+    description: 'ป้อมปืนเลเซอร์โฟตอน ยิงทำลายโดรนตัวเลขสกัดกั้นมิสไซล์ก่อนถล่มฐานทัพ',
+    category: 'mixed',
+    icon: Shield,
+    tag: 'เลเซอร์โฟตอน • ปกป้องฐาน',
+    colorGrad: 'from-cyan-600 to-blue-700',
+    borderClass: 'border-cyan-500/40 hover:border-cyan-400',
+    glowClass: 'shadow-cyan-500/20',
+  },
+  {
+    id: 'thunder_striker',
+    number: 12,
+    title: 'สายฟ้าพิฆาตอสูร',
+    subtitle: 'Thunder Strike Storm',
+    description: 'อัญเชิญพลังสายฟ้าฟาดจากฟ้าผ่าทำลายเสาพลังงานตัวเลขที่ถูกต้อง',
+    category: 'mixed',
+    icon: Zap,
+    tag: 'สายฟ้าฟาด • พลังนีออนทอง',
+    colorGrad: 'from-amber-500 to-yellow-600',
+    borderClass: 'border-amber-500/40 hover:border-amber-400',
+    glowClass: 'shadow-amber-500/20',
+  },
+  {
+    id: 'volcano_escape',
+    number: 13,
+    title: 'หนีลาวาภูเขาไฟเดือด',
+    subtitle: 'Volcano Lava Jump',
+    description: 'กระโดดข้ามแท่นหินอัคนีตัวเลขที่ถูกต้อง ไต่ระดับหนีลาวาเดือดที่กำลังพุ่งสูง',
+    category: 'mixed',
+    icon: Flame,
+    tag: 'เอาชีวิตรอด • ภูเขาไฟปะทุ',
+    colorGrad: 'from-orange-600 to-red-700',
+    borderClass: 'border-orange-500/40 hover:border-orange-400',
+    glowClass: 'shadow-orange-500/20',
+  },
+  {
+    id: 'alchemy_potion',
+    number: 14,
+    title: 'ปรุงยาเวทมนตร์แปรธาตุ',
+    subtitle: 'Magic Potion Alchemy',
+    description: 'หยดสารสกัดเคมีตัวเลขที่ถูกต้องลงหม้อต้มเวทมนตร์ ปรุงสูตรยาสำเร็จใน 10 วินาที',
+    category: 'mixed',
+    icon: Wand2,
+    tag: 'ปรุงยาวิเศษ • หม้อต้มรุ้ง',
+    colorGrad: 'from-fuchsia-600 to-purple-700',
+    borderClass: 'border-fuchsia-500/40 hover:border-fuchsia-400',
+    glowClass: 'shadow-fuchsia-500/20',
+  },
+  {
+    id: 'deep_sea_treasure',
+    number: 15,
+    title: 'ล่าสมบัติใต้ทะเลลึก',
+    subtitle: 'Deep Sea Odyssey',
+    description: 'ดำดิ่งสู่ซากเรือโบราณก้นสมุทร ปลดล็อกหีบสมบัติเรืองแสงก่อนออกซิเจนหมด',
+    category: 'mixed',
+    icon: Anchor,
+    tag: 'ดำน้ำลึก • หีบสมบัติไข่มุก',
+    colorGrad: 'from-teal-600 to-cyan-700',
+    borderClass: 'border-teal-500/40 hover:border-teal-400',
+    glowClass: 'shadow-teal-500/20',
+  },
 ];
 
 export const GameHub: React.FC<GameHubProps> = ({ currentUser }) => {
@@ -297,6 +372,22 @@ export const GameHub: React.FC<GameHubProps> = ({ currentUser }) => {
   if (activeGameId === 'balloon_pop') {
     return <BalloonPopGame onBack={handleBackToHub} onSaveScore={handleSaveGameScore} />;
   }
+  // 5 New Games
+  if (activeGameId === 'cyber_defense') {
+    return <CyberLaserDefenseGame onBack={handleBackToHub} onSaveScore={handleSaveGameScore} />;
+  }
+  if (activeGameId === 'thunder_striker') {
+    return <ThunderStrikerGame onBack={handleBackToHub} onSaveScore={handleSaveGameScore} />;
+  }
+  if (activeGameId === 'volcano_escape') {
+    return <VolcanoEscapeGame onBack={handleBackToHub} onSaveScore={handleSaveGameScore} />;
+  }
+  if (activeGameId === 'alchemy_potion') {
+    return <MagicPotionAlchemyGame onBack={handleBackToHub} onSaveScore={handleSaveGameScore} />;
+  }
+  if (activeGameId === 'deep_sea_treasure') {
+    return <DeepSeaTreasureGame onBack={handleBackToHub} onSaveScore={handleSaveGameScore} />;
+  }
 
   // Filtered Games List
   const filteredGames = GAMES_LIST.filter((game) => {
@@ -315,17 +406,12 @@ export const GameHub: React.FC<GameHubProps> = ({ currentUser }) => {
         <div className="absolute bottom-0 left-1/3 -mb-8 w-48 h-48 rounded-full bg-pink-500/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold mb-3">
-            <Gamepad2 className="w-4 h-4" />
-            <span>10 เกมคณิตศาสตร์จำนวนเต็มสุดตื่นเต้น</span>
-          </div>
-
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
             ศูนย์รวมเกมประลองความไว & กลยุทธ์
           </h2>
 
           <p className="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
-            เลือกเล่นเกมการคูณและการหารจำนวนเต็มทั้ง 10 เกม สนุก ตื่นเต้น ท้าทายความคิด และสะสมคะแนนเข้าสู่ตารางผู้นำ!
+            เลือกเล่นเกมการคูณและการหารจำนวนเต็มทั้ง 15 เกม สนุก ตื่นเต้น เร้าใจ มีเอฟเฟกต์แสง สี เสียง ท้าทายความคิด และสะสมคะแนนเข้าสู่ตารางผู้นำ!
           </p>
 
           {/* Last Saved Score Notification */}
@@ -342,7 +428,7 @@ export const GameHub: React.FC<GameHubProps> = ({ currentUser }) => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
           {[
-            { id: 'all', label: 'ทั้งหมด (10 เกม)' },
+            { id: 'all', label: 'ทั้งหมด (15 เกม)' },
             { id: 'multiplication', label: 'การคูณจำนวนเต็ม' },
             { id: 'division', label: 'การหารจำนวนเต็ม' },
             { id: 'speed', label: 'ผสม & ประลองความไว' },
@@ -365,11 +451,11 @@ export const GameHub: React.FC<GameHubProps> = ({ currentUser }) => {
         </div>
 
         <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-          แสดง {filteredGames.length} จาก 10 เกม
+          แสดง {filteredGames.length} จาก 15 เกม
         </div>
       </div>
 
-      {/* 10 Games Grid */}
+      {/* 15 Games Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {filteredGames.map((game) => {
           const Icon = game.icon;

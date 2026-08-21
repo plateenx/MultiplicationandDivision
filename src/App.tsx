@@ -14,6 +14,8 @@ import { InteractiveLearning } from './components/InteractiveLearning';
 import { ExerciseQuiz } from './components/ExerciseQuiz';
 import { GameHub } from './components/games/GameHub';
 import { LeaderboardAndLogs } from './components/LeaderboardAndLogs';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { MyScoreDashboard } from './components/MyScoreDashboard';
 import { SupabaseSettingsModal } from './components/SupabaseSettingsModal';
 
 export default function App() {
@@ -124,11 +126,20 @@ export default function App() {
             {activeTab === 'exercise' && (
               <ExerciseQuiz
                 currentUser={currentUser}
-                onFinishQuiz={() => setActiveTab('leaderboard')}
+                onFinishQuiz={() => setActiveTab('scores')}
               />
             )}
             {activeTab === 'games' && <GameHub currentUser={currentUser} />}
-            {activeTab === 'leaderboard' && <LeaderboardAndLogs />}
+            {activeTab === 'scores' && (
+              <MyScoreDashboard
+                currentUser={currentUser}
+                onNavigateToQuiz={() => setActiveTab('exercise')}
+                onNavigateToGames={() => setActiveTab('games')}
+              />
+            )}
+            {(activeTab === 'analytics' || activeTab === 'leaderboard') && (
+              <AnalyticsDashboard currentUser={currentUser} />
+            )}
           </main>
         </>
       )}

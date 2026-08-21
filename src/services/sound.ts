@@ -46,6 +46,43 @@ class SoundService {
     }
   }
 
+  public playCardFlip() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      
+      // Whoosh/swoosh frequency sweep for card flip
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(800, now);
+      filter.frequency.exponentialRampToValueAtTime(2200, now + 0.08);
+      filter.frequency.exponentialRampToValueAtTime(600, now + 0.18);
+      filter.Q.value = 3;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(750, now + 0.07);
+      osc.frequency.exponentialRampToValueAtTime(250, now + 0.18);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.18);
+    } catch {
+      // Catch audio errors
+    }
+  }
+
   public playCorrect() {
     const ctx = this.getContext();
     if (!ctx) return;
@@ -250,6 +287,48 @@ class SoundService {
       gain.connect(ctx.destination);
       osc.start(now);
       osc.stop(now + 0.08);
+    } catch {}
+  }
+
+  public playGameOver() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const notes = [440, 415.3, 392, 369.99];
+      notes.forEach((f, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(f, now + idx * 0.15);
+        gain.gain.setValueAtTime(0.2, now + idx * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.15 + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.15);
+        osc.stop(now + idx * 0.15 + 0.3);
+      });
+    } catch {}
+  }
+
+  public playMagic() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const freqs = [587.33, 739.99, 880, 1174.66, 1479.98, 1760];
+      freqs.forEach((f, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, now + idx * 0.04);
+        gain.gain.setValueAtTime(0.18, now + idx * 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.2);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.04);
+        osc.stop(now + idx * 0.04 + 0.2);
+      });
     } catch {}
   }
 
